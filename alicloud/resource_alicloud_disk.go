@@ -5,10 +5,6 @@ import (
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/resource"
-	"time"
-	"github.com/denverdino/aliyungo/common"
-	"log"
 )
 
 func resourceAliyunDisk() *schema.Resource {
@@ -93,7 +89,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 
 		if (args.DiskCategory == ecs.DiskCategoryCloudEfficiency ||
-			args.DiskCategory == ecs.DiskCategoryCloudSSD) && (size < 20 || size > 32768) {
+				args.DiskCategory == ecs.DiskCategoryCloudSSD) && (size < 20 || size > 32768) {
 			return fmt.Errorf("the size of %s disk must between 20 to 32768", args.DiskCategory)
 		}
 
@@ -103,7 +99,7 @@ func resourceAliyunDiskCreate(d *schema.ResourceData, meta interface{}) error {
 			args.Size = 5
 		}
 		if args.DiskCategory == ecs.DiskCategoryCloudEfficiency ||
-			args.DiskCategory == ecs.DiskCategoryCloudSSD {
+				args.DiskCategory == ecs.DiskCategoryCloudSSD {
 			args.Size = 20
 		}
 
@@ -189,18 +185,9 @@ func resourceAliyunDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunDiskDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	return resource.Retry(5 * time.Minute, func() *resource.RetryError {
-		err := conn.DeleteDisk(d.Id())
-		if err == nil {
-			return nil
-		}
-
-		e, _ := err.(*common.Error)
-		if e.ErrorResponse.Code == "IncorrectDiskStatus" || e.ErrorResponse.Code == "DiskCreatingSnapshot" {
-			return resource.RetryableError(fmt.Errorf("Disk in use - trying again while it is deleted."))
-		}
-
-		log.Printf("[ERROR] Delete disk is failed.")
-		return resource.NonRetryableError(err)
-	})
+	err := conn.DeleteDisk(d.Id())
+	if err != nil {
+		return err
+	}
+	return nil
 }

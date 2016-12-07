@@ -6,8 +6,6 @@ import (
 
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/resource"
-	"time"
 )
 
 func resourceAliyunVpc() *schema.Resource {
@@ -150,14 +148,11 @@ func resourceAliyunVpcUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunVpcDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	return resource.Retry(5 * time.Minute, func() *resource.RetryError {
-		err := conn.DeleteVpc(d.Id())
-		if err == nil {
-			return nil
-		}
+	if err := conn.DeleteVpc(d.Id()); err != nil {
+		return err
+	}
 
-		return resource.RetryableError(fmt.Errorf("Vpc in use - trying again while it is deleted."))
-	})
+	return nil
 }
 
 func buildAliyunVpcArgs(d *schema.ResourceData, meta interface{}) (*ecs.CreateVpcArgs, error) {

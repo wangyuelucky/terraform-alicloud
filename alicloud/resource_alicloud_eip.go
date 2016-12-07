@@ -6,10 +6,6 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/helper/resource"
-	"time"
-	"log"
-	"fmt"
 )
 
 func resourceAliyunEip() *schema.Resource {
@@ -120,20 +116,12 @@ func resourceAliyunEipUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceAliyunEipDelete(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AliyunClient).ecsconn
 
-	return resource.Retry(5 * time.Minute, func() *resource.RetryError {
-		err := conn.ReleaseEipAddress(d.Id())
-		if err == nil {
-			return nil
-		}
+	err := conn.ReleaseEipAddress(d.Id())
+	if err != nil {
+		return err
+	}
 
-		e, _ := err.(*common.Error)
-		if e.ErrorResponse.Code == "IncorrectEipStatus" {
-			return resource.RetryableError(fmt.Errorf("EIP in use - trying again while it is deleted."))
-		}
-
-		log.Println("[ERROR] Delete EIP failed.")
-		return resource.NonRetryableError(err)
-	})
+	return nil
 }
 
 func buildAliyunEipArgs(d *schema.ResourceData, meta interface{}) (*ecs.AllocateEipAddressArgs, error) {
